@@ -5,6 +5,33 @@ const t = initTRPC.create();
 const publicProcedure = t.procedure;
 
 const appRouter = t.router({
+  auth: t.router({
+    signUp: publicProcedure.input(z.object({
+      email: z.string().email(),
+      password: z.string().min(6),
+      name: z.string().min(2),
+    })).output(z.object({
+      user: z.object({
+        id: z.string(),
+        email: z.string(),
+        name: z.string(),
+        createdAt: z.string(),
+      }),
+      token: z.string(),
+    })).mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as any),
+    signIn: publicProcedure.input(z.object({
+      email: z.string().email(),
+      password: z.string(),
+    })).output(z.object({
+      user: z.object({
+        id: z.string(),
+        email: z.string(),
+        name: z.string(),
+        createdAt: z.string(),
+      }),
+      token: z.string(),
+    })).mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as any)
+  }),
   todo: t.router({
     getTodoById: publicProcedure.input(z.object({ id: z.string() })).output(z.object({
       id: z.string(),
