@@ -1,18 +1,25 @@
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { Picker } from "@react-native-picker/picker";
 import { trpc } from "@repo/trpc/client";
 import { useState } from "react";
-import { Picker } from "@react-native-picker/picker";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import {
   ActivityIndicator,
   Button,
+  Modal,
   Platform,
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 
-export default function CreateTodo() {
+interface CreateTodoProps {
+  visible: boolean;
+  onClose: () => void;
+}
+
+export default function CreateTodo({ visible, onClose }: CreateTodoProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
@@ -27,6 +34,7 @@ export default function CreateTodo() {
       setDueDate(undefined);
       setPriority("");
       utils.todo.getAllTodos.invalidate();
+      onClose();
     },
   });
 
@@ -43,95 +51,124 @@ export default function CreateTodo() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Create a Todo</Text>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <Text style={styles.title}>Create a Todo</Text>
 
-      <TextInput
-        value={name}
-        onChangeText={setName}
-        placeholder="Todo name"
-        style={styles.input}
-      />
-
-      <TextInput
-        value={description}
-        onChangeText={setDescription}
-        placeholder="Description"
-        multiline
-        numberOfLines={3}
-        style={[styles.input, { height: 80 }]}
-      />
-
-      <View style={{ marginBottom: 12 }}>
-        <Button
-          title={dueDate ? dueDate.toDateString() : "Pick due date"}
-          onPress={() => setShowDatePicker(true)}
-        />
-        {showDatePicker && (
-          <DateTimePicker
-            value={dueDate ?? new Date()}
-            mode="date"
-            display={Platform.OS === "ios" ? "inline" : "default"}
-            onChange={(_, selectedDate) => {
-              setShowDatePicker(false);
-              if (selectedDate) setDueDate(selectedDate);
-            }}
+          <TextInput
+            value={name}
+            onChangeText={setName}
+            placeholder="Todo name"
+            style={styles.input}
           />
-        )}
-      </View>
 
-      <View style={styles.pickerWrapper}>
-        <Picker
-          selectedValue={priority}
-          onValueChange={(itemValue) => {
-            setPriority(itemValue);
-          }}
-        >
-          <Picker.Item label="Priority (optional)" value="" />
-          <Picker.Item label="Low" value="low" />
-          <Picker.Item label="Medium" value="medium" />
-          <Picker.Item label="High" value="high" />
-        </Picker>
-      </View>
-
-      <View style={styles.buttonWrapper}>
-        {mutation.isPending ? (
-          <ActivityIndicator color="#2563eb" />
-        ) : (
-          <Button
-            title="Create Todo"
-            onPress={handleSubmit}
-            disabled={mutation.isPending}
-            color="#2563eb"
+          <TextInput
+            value={description}
+            onChangeText={setDescription}
+            placeholder="Description"
+            multiline
+            numberOfLines={3}
+            style={[styles.input, { height: 80 }]}
           />
-        )}
+
+          <View style={{ marginBottom: 12 }}>
+            <Button
+              title={dueDate ? dueDate.toDateString() : "Pick due date"}
+              onPress={() => setShowDatePicker(true)}
+            />
+            {showDatePicker && (
+              <DateTimePicker
+                value={dueDate ?? new Date()}
+                mode="date"
+                display={Platform.OS === "ios" ? "inline" : "default"}
+                onChange={(_, selectedDate) => {
+                  setShowDatePicker(false);
+                  if (selectedDate) setDueDate(selectedDate);
+                }}
+              />
+            )}
+          </View>
+
+          <View style={styles.pickerWrapper}>
+            <Picker
+              selectedValue={priority}
+              onValueChange={(itemValue) => {
+                setPriority(itemValue);
+              }}
+            >
+              <Picker.Item label="Priority (optional)" value="" />
+              <Picker.Item label="Low" value="low" />
+              <Picker.Item label="Medium" value="medium" />
+              <Picker.Item label="High" value="high" />
+            </Picker>
+          </View>
+
+          <View style={styles.buttonContainer}>
+            {mutation.isPending ? (
+              <ActivityIndicator color="#2563eb" />
+            ) : (
+              <>
+                <TouchableOpacity
+                  style={[styles.button, styles.createButton]}
+                  onPress={handleSubmit}
+                  disabled={mutation.isPending}
+                >
+                  <Text style={styles.createButtonText}>Create Todo</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.button, styles.cancelButton]}
+                  onPress={onClose}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
       </View>
-    </View>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
     padding: 16,
+  },
+  modalContent: {
     backgroundColor: "#fff",
-    marginBottom: 16,
-    borderRadius: 8,
+    borderRadius: 12,
+    padding: 20,
+    width: "100%",
+    maxWidth: 500,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   title: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: "600",
-    marginBottom: 12,
+    marginBottom: 16,
+    textAlign: "center",
   },
   input: {
     borderWidth: 1,
     borderColor: "#d1d5db",
     borderRadius: 6,
+    padding: 10,
     marginBottom: 12,
+    fontSize: 16,
   },
   pickerWrapper: {
     borderWidth: 1,
@@ -139,7 +176,29 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     marginBottom: 12,
   },
-  buttonWrapper: {
+  buttonContainer: {
+    gap: 8,
     marginTop: 8,
+  },
+  button: {
+    padding: 12,
+    borderRadius: 6,
+    alignItems: "center",
+  },
+  createButton: {
+    backgroundColor: "#2563eb",
+  },
+  createButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  cancelButton: {
+    backgroundColor: "#d1d5db",
+  },
+  cancelButtonText: {
+    color: "#374151",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

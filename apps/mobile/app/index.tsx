@@ -1,6 +1,8 @@
-import { trpc } from "@repo/trpc/client";
-import { useState } from "react";
+import { trpc } from '@repo/trpc/client';
+import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   RefreshControl,
   ScrollView,
@@ -8,20 +10,30 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from "react-native";
-import CreateTodo from "./CreateTodo";
-import EditTodo from "./EditTodo";
+} from 'react-native';
+import CreateTodo from './CreateTodo';
+import EditTodo from './EditTodo';
+import { useAuth } from './auth/AuthContext';
 
 export default function TodosScreen() {
   const { data: todos, refetch, isRefetching } = trpc.todo.getAllTodos.useQuery();
   const utils = trpc.useUtils();
+  const { isAuthenticated, user, logout, isLoading } = useAuth();
+  const router = useRouter();
+  const [createModalVisible, setCreateModalVisible] = useState(false);
   const [editingTodo, setEditingTodo] = useState<{
     id: string;
     name: string;
     description: string;
     dueDate?: string;
-    priority?: "low" | "medium" | "high";
+    priority?: 'low' | 'medium' | 'high';
   } | null>(null);
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace('/welcome' as any);
+    }
+  }, [isAuthenticated, isLoading, router]);
 
   const updateMutation = trpc.todo.updateTodo.useMutation({
     onSuccess: () => utils.todo.getAllTodos.invalidate(),
@@ -37,18 +49,35 @@ export default function TodosScreen() {
 
   const handleDelete = (todoId: string) => {
     Alert.alert(
-      "Confirm Delete",
-      "Are you sure you want to delete this todo?",
+      'Confirm Delete',
+      'Are you sure you want to delete this todo?',
       [
-        { text: "Cancel", style: "cancel" },
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: "Delete",
-          style: "destructive",
+          text: 'Delete',
+          style: 'destructive',
           onPress: () => deleteMutaton.mutate({ id: todoId }),
         },
       ]
     );
   };
+
+  const handleLogout = async () => {
+    await logout();
+    router.replace('/auth/signin' as any);
+  };
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#2563eb" />
+      </View>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <ScrollView
@@ -57,12 +86,71 @@ export default function TodosScreen() {
         <RefreshControl
           refreshing={isRefetching}
           onRefresh={() => refetch()}
-          colors={["#2563eb"]}
+          colors={['#2563eb']}
           tintColor="#2563eb"
         />
       }
     >
-      <CreateTodo />
+      {/* Header with user info and logout */}
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 16,
+          backgroundColor: '#fff',
+          padding: 16,
+          borderRadius: 8,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.1,
+          shadowRadius: 2,
+          elevation: 2,
+        }}
+      >
+        <View>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1f2937' }}>
+            My Todos
+          </Text>
+          {user && (
+            <Text style={{ fontSize: 14, color: '#6b7280', marginTop: 4 }}>
+              Welcome, {user.name}!
+            </Text>
+          )}
+        </View>
+        <TouchableOpacity
+          onPress={handleLogout}
+          style={{
+            backgroundColor: '#dc2626',
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+            borderRadius: 6,
+          }}
+        >
+          <Text style={{ color: '#fff', fontWeight: '600' }}>Logout</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Create Todo Button */}
+      <TouchableOpacity
+        onPress={() => setCreateModalVisible(true)}
+        style={{
+          backgroundColor: '#2563eb',
+          padding: 16,
+          borderRadius: 8,
+          marginBottom: 16,
+          alignItems: 'center',
+        }}
+      >
+        <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>
+          + Create Todo
+        </Text>
+      </TouchableOpacity>
+
+      <CreateTodo
+        visible={createModalVisible}
+        onClose={() => setCreateModalVisible(false)}
+      />
 
       {editingTodo && (
         <EditTodo
