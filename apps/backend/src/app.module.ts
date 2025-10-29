@@ -2,7 +2,9 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { TRPCModule } from 'nestjs-trpc';
+import { AuthModule } from './auth/auth.module';
 import { TodosModule } from './todos/todos.module';
+import { TrpcContextService } from './trpc/trpc-context.service';
 
 @Module({
   imports: [
@@ -12,10 +14,12 @@ import { TodosModule } from './todos/todos.module';
     ),
     TRPCModule.forRoot({
       autoSchemaFile: '../../packages/trpc/src/server',
+      context: TrpcContextService,
     }),
+    AuthModule,
     TodosModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [TrpcContextService],
 })
 export class AppModule {}

@@ -8,28 +8,28 @@ import { CreateTodoInput } from './todo.schema';
 export class TodosService {
   constructor(@InjectModel(Todo.name) private todoModel: Model<Todo>) {}
 
-  async getTodoById(id: string) {
-    const todo = await this.todoModel.findById(id).exec();
+  async getTodoById(id: string, userId: string) {
+    const todo = await this.todoModel.findOne({ _id: id, userId }).exec();
     if (!todo) {
       throw new NotFoundException('Todo not found.');
     }
     return this.mapTodoToResponse(todo);
   }
 
-  async getAllTodos() {
-    const todos = await this.todoModel.find().exec();
+  async getAllTodos(userId: string) {
+    const todos = await this.todoModel.find({ userId }).exec();
     return todos.map((todo) => this.mapTodoToResponse(todo));
   }
 
-  async createTodo(todoData: CreateTodoInput) {
-    const todo = new this.todoModel(todoData);
+  async createTodo(todoData: CreateTodoInput, userId: string) {
+    const todo = new this.todoModel({ ...todoData, userId });
     const savedTodo = await todo.save();
     return this.mapTodoToResponse(savedTodo);
   }
 
-  async updateTodo(id: string, data: Partial<CreateTodoInput>) {
+  async updateTodo(id: string, data: Partial<CreateTodoInput>, userId: string) {
     const todo = await this.todoModel
-      .findByIdAndUpdate(id, data, { new: true })
+      .findOneAndUpdate({ _id: id, userId }, data, { new: true })
       .exec();
     if (!todo) {
       throw new NotFoundException('Todo not found.');
@@ -37,8 +37,10 @@ export class TodosService {
     return this.mapTodoToResponse(todo);
   }
 
-  async deleteTodo(id: string) {
-    const result = await this.todoModel.findByIdAndDelete(id).exec();
+  async deleteTodo(id: string, userId: string) {
+    const result = await this.todoModel
+      .findOneAndDelete({ _id: id, userId })
+      .exec();
     if (!result) {
       throw new NotFoundException('Todo not found.');
     }
