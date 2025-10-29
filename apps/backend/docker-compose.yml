@@ -3,11 +3,14 @@ name: 'todos-base-services'
 services:
   mongodb:
     image: mongo:6.0
-    entrypoint: echo "MongoDB service is disabled, please use MongoDB Atlas"
+    entrypoint: echo "MongoDB service is starting..."
     environment:
       MONGO_INITDB_DATABASE: todos_local
     ports:
       - ${DOCKER_LISTEN_HOST:-127.0.0.1}:${DOCKER_MONGODB_PORT:-28028}:27017
-    volumes:
-      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'mongo', '--eval', "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
