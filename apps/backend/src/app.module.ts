@@ -13,7 +13,10 @@ import { TrpcContextService } from './trpc/trpc-context.service';
       process.env.MONGO_URL || 'mongodb://localhost:28028/todos_local',
     ),
     TRPCModule.forRoot({
-      autoSchemaFile: '../../packages/trpc/src/server',
+      autoSchemaFile:
+        process.env.NODE_ENV === 'production'
+          ? '/tmp/trpc-schema.ts'
+          : '../../packages/trpc/src/server',
       context: TrpcContextService,
     }),
     AuthModule,
