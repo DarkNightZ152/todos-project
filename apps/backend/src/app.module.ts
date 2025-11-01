@@ -10,7 +10,9 @@ import { TrpcContextService } from './trpc/trpc-context.service';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     MongooseModule.forRoot(
-      process.env.MONGO_URL || 'mongodb://localhost:28028/todos_local',
+      process.env.NODE_ENV === 'production'
+        ? process.env.MONGO_URL!
+        : 'mongodb://localhost:28028/todos_local',
     ),
     TRPCModule.forRoot({
       autoSchemaFile:
